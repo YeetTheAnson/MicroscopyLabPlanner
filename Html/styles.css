@@ -184,3 +184,19 @@ select {
 .save-remarks:hover {
     background-color: #2980b9;
 }
+.download-remarks {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.download-remarks:hover {
+    background-color: #2980b9;
+}

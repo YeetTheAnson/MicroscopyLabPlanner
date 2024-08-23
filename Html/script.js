@@ -6,6 +6,7 @@ let selectedExperiment = '';
 let selectedMicroscope = '';
 let completedStages = new Set();
 let currentTaskIndex = 0;
+let savedRemarks = {};
 
 function updateStage(stage) {
     if (stage > currentStage && !canProgressToStage(stage)) {
@@ -93,10 +94,7 @@ function renderStageContent(stage) {
         case 2:
         case 3:
         case 4:
-            let title;
-            if (stage === 2) title = "Pre-use checklist";
-            else if (stage === 3) title = "Experimental procedure";
-            else title = "Post-use checklist";
+            let title = "Post-use checklist";
             
             stageContent.innerHTML = `
                 <h2>${title} - ${selectedExperiment}</h2>
@@ -108,6 +106,14 @@ function renderStageContent(stage) {
             renderTask(tasks, currentTaskIndex);
 
             document.addEventListener('keydown', handleKeyPress);
+            
+            // Add download button after the last task
+            const downloadButton = document.createElement('button');
+            downloadButton.textContent = 'Download Saved Remarks';
+            downloadButton.className = 'download-remarks';
+            downloadButton.style.display = 'none';
+            downloadButton.addEventListener('click', downloadRemarks);
+            checklist.after(downloadButton);
             break;
     }
 }
@@ -141,10 +147,59 @@ function renderTask(tasks, index) {
     if (saveRemarksButton) {
         saveRemarksButton.addEventListener('click', saveRemarks);
     }
+
+    const remarksInput = currentItem.querySelector('.remarks-input');
+    const taskLabel = currentItem.querySelector('label').textContent;
+    
+    if (savedRemarks[currentStage] && savedRemarks[currentStage][taskLabel]) {
+        remarksInput.value = savedRemarks[currentStage][taskLabel];
+    }
 }
 
 function saveRemarks() {
+    const remarksInput = document.querySelector('.remarks-input');
+    const taskLabel = document.querySelector('.checklist-item:not(.blurred) label').textContent;
+    
+    if (!savedRemarks[currentStage]) {
+        savedRemarks[currentStage] = {};
+    }
+    
+    savedRemarks[currentStage][taskLabel] = remarksInput.value || 'N/A';
     console.log('Remarks saved');
+}
+
+function generateRemarksText() {
+    let text = `Microscope: ${selectedExperiment} - ${selectedMicroscope}\n\n`;
+    
+    for (let stage = 2; stage <= 4; stage++) {
+        text += `Stage ${stage}: ${stage === 2 ? 'Pre-use checklist' : stage === 3 ? 'Experimental procedure' : 'Post-use checklist'}\n`;
+        
+        if (savedRemarks[stage]) {
+            for (const [task, remark] of Object.entries(savedRemarks[stage])) {
+                text += `- ${task}: ${remark}\n`;
+            }
+        } else {
+            text += 'No remarks for this stage.\n';
+        }
+        
+        text += '\n';
+    }
+    
+    return text;
+}
+
+function downloadRemarks() {
+    const text = generateRemarksText();
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedExperiment}_${selectedMicroscope}_remarks.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function handleKeyPress(e) {
@@ -159,6 +214,13 @@ function handleKeyPress(e) {
                 completedStages.add(currentStage);
                 nextButton.disabled = false;
                 document.removeEventListener('keydown', handleKeyPress);
+                
+                if (currentStage === 4) {
+                    const downloadButton = document.querySelector('.download-remarks');
+                    if (downloadButton) {
+                        downloadButton.style.display = 'block';
+                    }
+                }
             }
         }
     }
