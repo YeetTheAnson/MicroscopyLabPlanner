@@ -5,6 +5,7 @@ let currentStage = 1;
 let selectedExperiment = '';
 let selectedMicroscope = '';
 let completedStages = new Set();
+let currentTaskIndex = 0;
 
 function updateStage(stage) {
     if (stage > currentStage && !canProgressToStage(stage)) {
@@ -96,17 +97,10 @@ function renderStageContent(stage) {
             `;
             const checklist = document.getElementById('checklist');
             const tasks = getChecklist(selectedExperiment, selectedMicroscope);
-            tasks.forEach((task, index) => {
-                const li = document.createElement('li');
-                li.className = 'checklist-item';
-                li.innerHTML = `
-                    <input type="checkbox" id="task-${index}" data-index="${index}">
-                    <label for="task-${index}">${task}</label>
-                `;
-                checklist.appendChild(li);
-            });
+            currentTaskIndex = 0;
+            renderTask(tasks, currentTaskIndex);
 
-            nextButton.disabled = true;
+            document.addEventListener('keydown', handleKeyPress);
             break;
         case 3:
             stageContent.innerHTML = `<h2>Stage 3: ${selectedExperiment}</h2>`;
@@ -118,6 +112,59 @@ function renderStageContent(stage) {
             nextButton.disabled = true;
             completedStages.add(4);
             break;
+    }
+}
+
+function renderTask(tasks, index) {
+    const checklist = document.getElementById('checklist');
+    checklist.innerHTML = '';
+
+    tasks.forEach((task, i) => {
+        const li = document.createElement('li');
+        li.className = `checklist-item ${i < index ? 'completed' : i > index ? 'blurred' : ''}`;
+        li.innerHTML = `
+            <div class="checklist-item-content">
+                <input type="checkbox" id="task-${i}" ${i <= index ? 'checked' : ''}>
+                <label for="task-${i}">${task}</label>
+            </div>
+            <div class="remarks-container">
+                <textarea class="remarks-input" placeholder="Add remarks (optional)"></textarea>
+                <button class="save-remarks">Save Remarks</button>
+            </div>
+        `;
+        checklist.appendChild(li);
+    });
+
+    const currentItem = checklist.children[index];
+    if (currentItem) {
+        currentItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    const saveRemarksButton = checklist.querySelector('.save-remarks');
+    if (saveRemarksButton) {
+        saveRemarksButton.addEventListener('click', saveRemarks);
+    }
+}
+
+function saveRemarks() {
+    // Here you can add logic to save the remarks
+    console.log('Remarks saved');
+}
+
+function handleKeyPress(e) {
+    if (currentStage === 2) {
+        const tasks = getChecklist(selectedExperiment, selectedMicroscope);
+        if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            if (currentTaskIndex < tasks.length - 1) {
+                currentTaskIndex++;
+                renderTask(tasks, currentTaskIndex);
+            } else {
+                completedStages.add(2);
+                nextButton.disabled = false;
+                document.removeEventListener('keydown', handleKeyPress);
+            }
+        }
     }
 }
 
@@ -140,16 +187,11 @@ function getChecklist(experiment, microscope) {
             "Divide number of cells by area to obtain cell density."
         ];
     } else if (experiment === 'fluorescence') {
-        return ["test"];
+        return ["Placeholder task 1 for fluorescence imaging", "Placeholder task 2 for fluorescence imaging"];
     } else if (experiment === 'phase-contrast') {
-        return ["test"];
+        return ["Placeholder task 1 for phase contrast imaging", "Placeholder task 2 for phase contrast imaging"];
     }
     return [];
-}
-
-function areAllTasksCompleted() {
-    const checkboxes = document.querySelectorAll('#checklist input[type="checkbox"]');
-    return Array.from(checkboxes).every(checkbox => checkbox.checked);
 }
 
 nextButton.addEventListener('click', function() {
