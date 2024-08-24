@@ -7,6 +7,24 @@ let selectedMicroscope = '';
 let completedStages = new Set();
 let currentTaskIndex = 0;
 let savedRemarks = {};
+const spotlight = document.getElementById('spotlight');
+
+document.addEventListener('mousemove', function (e) {
+    const scrollX = window.scrollX || window.pageXOffset;
+    const scrollY = window.scrollY || window.pageYOffset;
+
+    spotlight.style.left = `${e.clientX + scrollX}px`;
+    spotlight.style.top = `${e.clientY + scrollY}px`;
+
+    const bgShiftX = (e.clientX + scrollX) * 0.05;
+    const bgShiftY = (e.clientY + scrollY) * 0.05;
+
+    document.body.style.backgroundPosition = `${bgShiftX}px ${bgShiftY}px`;
+});
+
+document.addEventListener('mouseleave', function () {
+    document.body.style.backgroundPosition = 'top left';
+});
 
 function updateStage(stage) {
     if (stage > currentStage && !canProgressToStage(stage)) {
